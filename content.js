@@ -82,7 +82,7 @@ function showMenu(x, y, selection, isExisting = false, existingElement = null) {
 
     document.body.appendChild(menu);
     positionMenuWithinViewport(menu, x, y);
-    currentMenu = menu;
+    currentMenu = menu; el pepe
 }
 
 function positionMenuWithinViewport(menu, x, y) {
