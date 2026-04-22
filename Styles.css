@@ -1,0 +1,180 @@
+/* Colores de resaltado técnicos */
+.hl-red     { background-color: #ff0000 !important; color: #fff !important; }
+.hl-pink    { background-color: #ff007f !important; color: #fff !important; }
+.hl-yellow  { background-color: #ffff00 !important; color: #000 !important; }
+.hl-green   { background-color: #00ff00 !important; color: #000 !important; }
+.hl-cyan    { background-color: #00ffff !important; color: #000 !important; }
+.hl-orange  { background-color: #ff8c00 !important; color: #000 !important; }
+.hl-purple  { background-color: #9400d3 !important; color: #fff !important; }
+.hl-blue    { background-color: #0000ff !important; color: #fff !important; }
+.hl-gray    { background-color: #808080 !important; color: #fff !important; }
+
+/* Nuevo: Estilo de Subrayado Rojo */
+.hl-underline-red { 
+    background-color: transparent !important; 
+    text-decoration: underline !important; 
+    text-decoration-color: #ff0000 !important; 
+    text-decoration-thickness: 2px !important; 
+    text-underline-offset: 3px;
+    color: inherit !important; 
+}
+
+.big-d-highlight { 
+    cursor: pointer; 
+    border-radius: 2px; 
+}
+
+/* Menú Principal: Diseño Cristal Plomo 3D Reducido */
+#big-d-menu {
+    position: absolute;
+    z-index: 2147483647;
+    background: rgba(200, 200, 200, 0.45); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 8px 24px rgba(0,0,0,0.18),
+        0 2px 6px rgba(0,0,0,0.12),
+        inset 0 1px 1px rgba(255,255,255,0.7);     
+    border-radius: 12px;
+    padding: 6px 8px; 
+    display: flex;
+    gap: 5px; 
+    align-items: center;
+
+    /* Animación de entrada elegante */
+    animation: menu-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform-origin: bottom center;
+    will-change: transform, opacity;
+}
+
+/* Puntos de Color Pequeños (20px) */
+.color-dot {
+    width: 20px; 
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1.5px solid rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-dot:hover { 
+    transform: scale(1.12); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25); 
+}
+
+/* Estilo visual para el botón de subrayado en el menú */
+.color-dot.hl-underline-red {
+    background-color: #fff !important;
+    border: 1px solid #ccc !important;
+    position: relative;
+}
+
+.color-dot.hl-underline-red::before {
+    content: "";
+    position: absolute;
+    bottom: 4px;
+    width: 12px;
+    height: 2px;
+    background-color: red;
+}
+
+/* Indicador de Eliminación (X) */
+.dot-active-delete::after {
+    content: "✕";
+    font-weight: 900;
+    font-size: 11px; 
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+}
+
+/* Botón de Configuración (Engranaje) */
+.config-btn {
+    cursor: pointer;
+    font-size: 16px; 
+    padding-left: 2px;
+    transition: transform 0.4s ease;
+    display: flex;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.config-btn:hover { 
+    transform: rotate(90deg); 
+    opacity: 1;
+}
+
+/* Panel de Ajustes: Cuadrícula Técnica 5x2 */
+#big-d-config-panel {
+    position: absolute;
+    top: 45px; 
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 10px;
+    border: 1px solid #ddd;
+    z-index: 2147483647;
+    width: max-content;
+
+    /* Animación de deslizamiento para el panel */
+    animation: panel-slide 0.25s ease-out forwards;
+}
+
+/* Resalte de Selección en Configuración */
+.dot-selected-config {
+    outline: 2px solid #2196F3;
+    outline-offset: 2px;
+    border: 2px solid white !important;
+}
+
+/* --- Definiciones de Animación --- */
+
+@keyframes menu-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.85) translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes panel-slide {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+/* Modo de ocultación visual de resaltados */
+.big-d-hide-highlights .big-d-highlight,
+.big-d-hide-highlights .hl-red,
+.big-d-hide-highlights .hl-pink,
+.big-d-hide-highlights .hl-yellow,
+.big-d-hide-highlights .hl-green,
+.big-d-hide-highlights .hl-cyan,
+.big-d-hide-highlights .hl-orange,
+.big-d-hide-highlights .hl-purple,
+.big-d-hide-highlights .hl-blue,
+.big-d-hide-highlights .hl-gray,
+.big-d-hide-highlights .hl-underline-red {
+    background-color: transparent !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    border-bottom: none !important;
+    cursor: text !important;
+    border-radius: 0 !important;
+}

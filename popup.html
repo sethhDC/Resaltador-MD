@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="jspdf.min.js"></script>
+    <style>
+        /* VARIABLES DE TEMA DINÁMICAS */
+        :root {
+            --bg-body: #f4f7f9;
+            --bg-card: #ffffff;
+            --bg-header-folder: linear-gradient(to right, #ebedef, #d6dbdf);
+            --bg-folder-content: #f4f7f9;
+            --text-main: #333333;
+            --text-header: #2c3e50;
+            --border-color: #d5dbdb;
+            --input-bg: #ffffff;
+            --card-hover: #f7f9f9;
+            --shadow: rgba(0,0,0,0.05);
+        }
+
+        /* CONFIGURACIÓN MODO OSCURO */
+        body.theme-dark {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --bg-header-folder: linear-gradient(to right, #2c2c2c, #3d3d3d);
+            --bg-folder-content: #181818;
+            --text-main: #e0e0e0;
+            --text-header: #ffffff;
+            --border-color: #333333;
+            --input-bg: #252525;
+            --card-hover: #2a2a2a;
+            --shadow: rgba(0,0,0,0.3);
+        }
+        body.theme-dark .page-meta { color: #9aa0a6; }
+
+        /* SOPORTE PARA TEMA DE SISTEMA */
+        @media (prefers-color-scheme: dark) {
+            body.theme-system {
+                --bg-body: #121212;
+                --bg-card: #1e1e1e;
+                --bg-header-folder: linear-gradient(to right, #2c2c2c, #3d3d3d);
+                --bg-folder-content: #181818;
+                --text-main: #e0e0e0;
+                --text-header: #ffffff;
+                --border-color: #333333;
+                --input-bg: #252525;
+                --card-hover: #2a2a2a;
+                --shadow: rgba(0,0,0,0.3);
+            }
+        }
+
+        body { width: auto; min-width: 400px; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-body); margin: 0; padding: 15px; color: var(--text-main); transition: background 0.3s, color 0.3s; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h2 { font-size: 17px; color: var(--text-header); margin: 0; font-weight: 700; }
+        
+        .header-buttons { display: flex; gap: 8px; }
+
+        .btn-add-folder, .btn-settings {
+            width: 32px; height: 32px; border-radius: 8px;
+            border: none; font-size: 18px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; background: var(--bg-card); color: #566573;
+            border: 1px solid var(--border-color); box-shadow: 0 2px 5px var(--shadow);
+        }
+        .btn-add-folder { background: #1a73e8; color: white; border: none; }
+        .btn-add-folder:hover { background: #1765cc; transform: scale(1.05); }
+        .btn-settings:hover { background: var(--card-hover); } 
+
+        .gear-icon, .theme-icon { display: inline-block; transition: transform 0.4s ease; line-height: 1; }
+        .btn-settings:hover .gear-icon { transform: rotate(90deg) scale(1.15); }
+        .btn-settings:hover .theme-icon { transform: rotate(-30deg) scale(1.15); }
+
+        .search-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .search-icon { font-size: 16px; flex-shrink: 0; }
+        .search-container { position: relative; flex-grow: 1; }
+        
+        .search-input { 
+            width: 100%; box-sizing: border-box; padding: 8px 30px 8px 12px; 
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; 
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s; 
+            background: var(--input-bg); color: var(--text-main);
+        }
+        .search-input:focus { border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+
+        .clear-search-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; font-size: 16px; font-weight: bold; color: #888;
+            display: none; transition: color 0.2s;
+        }
+        .clear-search-btn:hover { color: #d93025; }
+
+        #main-container { display: flex; flex-direction: column; gap: 6px; }
+
+        .folder-container { border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); overflow: hidden; display: flex; flex-direction: column; gap: 0; }
+        
+        .folder-header { 
+            background: var(--bg-header-folder); 
+            padding: 10px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        
+        .folder-arrow { font-size: 10px; color: #566573; transition: transform 0.3s ease; display: inline-block; }
+        .folder-header.open .folder-arrow { transform: rotate(90deg); }
+
+        .folder-name { flex-grow: 1; font-weight: 600; font-size: 14px; color: var(--text-header); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .folder-header .folder-actions { 
+            display: none; position: absolute; right: 10px; 
+            background: linear-gradient(to left, var(--bg-header-folder) 80%, transparent); 
+            padding-left: 15px; gap: 5px; 
+        }
+        .folder-header:hover .folder-actions { display: flex; }
+
+        .folder-content { display: none; padding: 6px 0 0 0; background: var(--bg-folder-content); flex-direction: column; gap: 6px; }
+
+        .page-card {
+            background: var(--bg-card); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; gap: 10px;
+            position: relative; border: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;
+            overflow: hidden;
+        }
+        .page-card:hover { background: var(--card-hover); border-color: #bdc3c7; }
+        .page-card:hover .info { padding-right: 118px; }
+
+        .favicon { width: 20px; height: 20px; flex-shrink: 0; }
+        .info { display: flex; flex-direction: column; overflow: hidden; flex-grow: 1; min-width: 0; transition: padding-right 0.2s; }
+        .title { font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .page-meta {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .actions { 
+            display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            gap: 6px; background: linear-gradient(to left, var(--card-hover) 80%, transparent); padding-left: 15px;
+        }
+        .page-card:hover .actions { display: flex; }
+
+        .btn-action { width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+
+        .btn-pdf { color: #1a73e8; }
+        .btn-pdf:hover { background: #1a73e8 !important; color: white !important; }
+        .btn-move { color: #566573; }
+        .btn-move:hover { background: #566573 !important; color: white !important; }
+        .btn-delete { color: #5f6368; }
+        .btn-delete:hover { background: #d93025 !important; color: white !important; }
+
+        .highlights-detail { display: none; padding: 10px; font-size: 12.5px; border-top: 1px solid var(--border-color); background: var(--bg-folder-content); border-radius: 0 0 8px 8px; }
+
+        .hl-date-group {
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0.75;
+            margin: 8px 2px 4px 2px;
+            line-height: 1.2;
+            color: var(--text-main);
+        }
+
+        .hl-date-group:first-child {
+            margin-top: 2px;
+        }
+
+        .hl-entry {
+            margin: 4px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border-left: 3px solid rgba(0,0,0,0.1);
+            position: relative;
+            color: #fff;
+        }
+        .hl-yellow, .hl-green, .hl-cyan, .hl-orange { color: #000 !important; }
+
+        .hl-text {
+            display: inline;
+            padding-right: 52px;
+        }
+
+        .nav-bullet {
+            font-weight: 900; padding: 0 4px; margin-left: -4px; 
+            display: inline-block; transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+        }
+        .hl-entry:hover .nav-bullet { transform: scale(1.4); opacity: 0.8; color: #1a73e8; }
+
+        .hl-actions {
+            position: absolute; bottom: 2px; right: 6px; display: flex; gap: 6px;
+            opacity: 0; transition: opacity 0.2s ease; background: transparent;
+        }
+        .hl-entry:hover .hl-actions { opacity: 1; }
+
+        .hl-btn {
+            cursor: pointer; font-size: 13px; font-weight: bold; color: #333;
+            transition: color 0.2s ease, transform 0.1s; line-height: 1; padding: 2px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .hl-btn:hover { color: #1a73e8; transform: scale(1.2); }
+        .hl-btn.delete:hover { color: #d93025; }
+
+        /* ESTILOS DEL TOOLTIP */
+        .tooltip {
+            position: relative; display: inline-block; cursor: help; margin-left: 5px; color: #1a73e8; font-weight: bold; font-size: 14px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 220px; background-color: #333; color: #fff; text-align: left;
+            border-radius: 6px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%;
+            margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 11px; font-weight: normal;
+            line-height: 1.5; white-space: normal; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        #settings-view { display: none; flex-direction: column; gap: 15px; }
+        
+        .settings-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+        .settings-header-left { display: flex; align-items: center; gap: 10px; }
+        
+        .btn-back { background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: bold; padding: 0; font-size: 14px; }
+        .btn-back:hover { text-decoration: underline; }
+        
+        .btn-reset { 
+            background: transparent; border: 1px solid var(--border-color); border-radius: 6px; 
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; color: var(--text-main); transition: all 0.3s ease; font-size: 14px;
+        }
+        .btn-reset:hover { background: #fdf2f2; border-color: #e74c3c; }
+
+        .reset-icon { display: inline-block; transition: transform 0.4s ease; line-height: 1; }
+        .btn-reset:hover .reset-icon { transform: rotate(-180deg); }
+
+        .settings-header h3 { margin: 0; font-size: 16px; color: var(--text-header); }
+        
+        .settings-section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; }
+        .settings-section h4 { margin: 0 0 5px 0; font-size: 14px; color: var(--text-header); }
+        .settings-desc { font-size: 11px; color: #7f8c8d; margin: 0 0 15px 0; line-height: 1.4; }
+        
+        .color-map-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .color-dot-preview { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .color-map-input { flex-grow: 1; padding: 6px 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); border-radius: 4px; font-size: 12px; outline: none; transition: border-color 0.2s; }
+        .color-map-input:focus { border-color: #1a73e8; }
+
+        .db-buttons { display: flex; gap: 10px; margin-top: 5px; }
+        .btn-db { flex: 1; padding: 8px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; background: transparent; }
+        .btn-db-export { border: 1px solid #1a73e8; color: #1a73e8; }
+        .btn-db-export:hover { background: #1a73e8; color: #fff; }
+        .btn-db-import { border: 1px solid #e67e22; color: #e67e22; }
+        .btn-db-import:hover { background: #e67e22; color: #fff; }
+
+        .hl-red { background-color: #ff0000 !important; color: #fff !important; }
+        .hl-pink { background-color: #ff007f !important; color: #fff !important; }
+        .hl-yellow { background-color: #ffff00 !important; color: #000 !important; }
+        .hl-green { background-color: #00ff00 !important; color: #000 !important; }
+        .hl-cyan { background-color: #00ffff !important; color: #000 !important; }
+        .hl-orange { background-color: #ff8c00 !important; color: #000 !important; }
+        .hl-purple { background-color: #9400d3 !important; color: #fff !important; }
+        .hl-blue { background-color: #0000ff !important; color: #fff !important; }
+        .hl-gray { background-color: #808080 !important; color: #fff !important; }
+        .hl-underline-red { border-bottom: 2px solid red; color: var(--text-main) !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Páginas Resaltadas MD 📚</h2>
+        <div class="header-buttons">
+            <button class="btn-settings" id="themeBtn" title="Cambiar Tema">
+                <span class="theme-icon" id="themeIcon">🌓</span>
+            </button>
+            <button class="btn-settings" id="settingsBtn" title="Ajustes">
+                <span class="gear-icon">⚙️</span>
+            </button>
+            <button class="btn-add-folder" id="addFolderBtn" title="Nueva Carpeta">+</button>
+        </div>
+    </div>
+    
+    <div id="main-ui">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar dato, dosis o página...">
+                <span id="clearSearch" class="clear-search-btn" title="Borrar búsqueda">&times;</span>
+            </div>
+        </div>
+        <div id="main-container"></div>
+    </div>
+
+    <div id="settings-view">
+        <div class="settings-header">
+            <div class="settings-header-left">
+                <button id="backBtn" class="btn-back">⬅ Volver</button>
+                <h3>Ajustes Generales</h3>
+            </div>
+            <button id="resetSettingsBtn" class="btn-reset" title="Restaurar ajustes por defecto">
+                <span class="reset-icon">🔄</span>
+            </button>
+        </div>
+        
+        <div class="settings-section">
+            <h4>Ajustes de Comportamiento</h4>
+            <p class="settings-desc">Controla el comportamiento principal del resaltador dentro de las páginas web.</p>
+
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); cursor: pointer;">
+                <input type="checkbox" id="enableColorMenuCheck"> Activar menú de colores al seleccionar texto.
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); cursor: pointer; margin-top: 10px;">
+                <input type="checkbox" id="showHighlightsCheck"> Mostrar resaltados de texto en la página.
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); cursor: pointer; margin-top: 10px;">
+                <input type="checkbox" id="useSidePanelCheck"> Activar vista en panel lateral.
+            </label>
+        </div>
+
+        <div class="settings-section">
+            <h4>Etiqueta de Colores</h4>
+            <p class="settings-desc">Personaliza el significado de cada color. Estas etiquetas aparecerán como leyenda en tus reportes exportados.</p>
+            <div id="color-mapping-container"></div>
+        </div>
+
+        <div class="settings-section">
+            <h4>Plantilla de Copiado 
+                <div class="tooltip">?
+                    <div class="tooltiptext">
+                        <b>Variables disponibles:</b><br>
+                        [TEXTO]: Texto resaltado<br>
+                        [URL]: Enlace completo<br>
+                        [TITULO]: Título de la web<br>
+                        [CATEGORIA]: Significado del color<br>
+                        [ICONO]: Emoji del color<br>
+                        [FECHA]: Fecha actual<br>
+                        [DOMINIO]: Nombre de la web
+                    </div>
+                </div>
+            </h4>
+            <p class="settings-desc">Personaliza el formato al copiar usando las variables indicadas.</p>
+            <textarea id="copyTemplateInput" class="color-map-input" style="width: 100%; box-sizing: border-box; resize: vertical; min-height: 60px; padding: 10px; font-family: inherit;"></textarea>
+        </div>
+
+        <div class="settings-section">
+            <h4>Formato de Exportación</h4>
+            <p class="settings-desc">Configuración para el botón de Exportar (📄).</p>
+            <select id="exportFormatSelect" class="color-map-input" style="width: 100%; box-sizing: border-box; padding: 8px; margin-bottom: 10px;">
+                <option value="pdf">Documento PDF (.pdf)</option>
+                <option value="md">Markdown para Notion/Obsidian (.md)</option>
+                <option value="txt">Texto Plano (.txt)</option>
+            </select>
+            
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); margin-bottom: 6px; cursor: pointer;">
+                <input type="checkbox" id="includeLabelCheck"> Incluir etiquetas (texto).
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); cursor: pointer;">
+                <input type="checkbox" id="includeEmojiCheck"> Incluir emojis de color.
+            </label>
+        </div>
+
+        <div class="settings-section">
+            <h4>Respaldo de Base de Datos</h4>
+            <p class="settings-desc">Gestiona tus expedientes y configuraciones (JSON).</p>
+            <div class="db-buttons">
+                <button id="exportDataBtn" class="btn-db btn-db-export">📥 Exportar Backup</button>
+                <button id="importDataBtn" class="btn-db btn-db-import">📤 Importar Backup</button>
+                <input type="file" id="importFileInput" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
